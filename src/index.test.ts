@@ -127,11 +127,11 @@ describe("When setting image quality", () => {
   describe("And we pass a float quality", () => {
     const thirdSetup = () => secondSetup(12.4);
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with rounded quality", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:quality(12.4)`
+        `${originalImageUrl}/m/filters:quality(12)`
       );
     });
 
@@ -146,11 +146,11 @@ describe("When setting image quality", () => {
   describe("And we pass a quality < 0", () => {
     const thirdSetup = () => secondSetup(-2);
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with quality 'truncated' at 0", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:quality(-2)`
+        `${originalImageUrl}/m/filters:quality(0)`
       );
     });
 
@@ -163,13 +163,13 @@ describe("When setting image quality", () => {
   });
 
   describe("And we pass a quality > 100", () => {
-    const thirdSetup = () => secondSetup(101);
+    const thirdSetup = () => secondSetup(130);
 
     it("Returns processed (best effort) image url", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:quality(101)`
+        `${originalImageUrl}/m/filters:quality(100)`
       );
     });
 
@@ -283,9 +283,7 @@ describe("When using blur", () => {
     it("Returns processed (best effort) image url", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:blur(23.54)`
-      );
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/filters:blur(24)`);
     });
   });
 
@@ -305,7 +303,7 @@ describe("When using blur", () => {
     it("Returns processed (best effort) image url", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(`${originalImageUrl}/m/filters:blur(-2)`);
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/filters:blur(0)`);
     });
   });
 
@@ -325,7 +323,7 @@ describe("When using blur", () => {
     it("Returns processed (best effort) image url", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(`${originalImageUrl}/m/filters:blur(152)`);
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/filters:blur(150)`);
     });
   });
 
@@ -346,9 +344,7 @@ describe("When using blur", () => {
     it("Returns processed (best effort) image url", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:blur(5,7.65)`
-      );
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/filters:blur(5,8)`);
     });
   });
 
@@ -369,9 +365,7 @@ describe("When using blur", () => {
     it("Returns processed (best effort) image url", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:blur(5,-3)`
-      );
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/filters:blur(5,0)`);
     });
   });
 
@@ -393,7 +387,7 @@ describe("When using blur", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:blur(5,151)`
+        `${originalImageUrl}/m/filters:blur(5,150)`
       );
     });
   });
@@ -461,6 +455,25 @@ describe("When rotating", () => {
       expect(errors[0]).toMatch("rotate");
     });
   });
+
+  describe("And rotation is a float", () => {
+    const thirdSetup = () => secondSetup(90.2);
+
+    it("Returns processed image url with rotation rounded to the nearest integer", () => {
+      const { originalImageUrl, processedImageUrl } = thirdSetup();
+
+      expect(processedImageUrl).toBe(
+        `${originalImageUrl}/m/filters:rotate(90)`
+      );
+    });
+
+    it("Has 'rotate' error", () => {
+      const { errors } = thirdSetup();
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0]).toMatch("rotate");
+    });
+  });
 });
 
 describe("When setting brightness", () => {
@@ -490,11 +503,11 @@ describe("When setting brightness", () => {
   describe("And using a non-integer brightness", () => {
     const thirdSetup = () => secondSetup(23.6);
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with brightness rounded to the nearest integer", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:brightness(23.6)`
+        `${originalImageUrl}/m/filters:brightness(24)`
       );
     });
 
@@ -509,11 +522,11 @@ describe("When setting brightness", () => {
   describe("And using a brightness < -100", () => {
     const thirdSetup = () => secondSetup(-101);
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with brightness capped at -100", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:brightness(-101)`
+        `${originalImageUrl}/m/filters:brightness(-100)`
       );
     });
 
@@ -528,11 +541,11 @@ describe("When setting brightness", () => {
   describe("And using a brightness > 100", () => {
     const thirdSetup = () => secondSetup(103);
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with brightness capped at 100", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/filters:brightness(103)`
+        `${originalImageUrl}/m/filters:brightness(100)`
       );
     });
 
@@ -909,10 +922,10 @@ describe("When resizing image", () => {
         width: 200.34,
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with width rounded to the nearest integer", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(`${originalImageUrl}/m/200.34x0/`);
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/200x0/`);
     });
 
     it("Has 'resize.width' error", () => {
@@ -929,10 +942,10 @@ describe("When resizing image", () => {
         width: -200,
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with width capped at 0", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(`${originalImageUrl}/m/-200x0/`);
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/0x0/`);
     });
 
     it("Has 'resize.width' error", () => {
@@ -949,10 +962,10 @@ describe("When resizing image", () => {
         height: 200.34,
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with height rounded to the nearest integer", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(`${originalImageUrl}/m/0x200.34/`);
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/0x200/`);
     });
 
     it("Has 'resize.height' error", () => {
@@ -969,10 +982,10 @@ describe("When resizing image", () => {
         height: -200,
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with height capped at 0", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
-      expect(processedImageUrl).toBe(`${originalImageUrl}/m/0x-200/`);
+      expect(processedImageUrl).toBe(`${originalImageUrl}/m/0x0/`);
     });
 
     it("Has 'resize.height' error", () => {
@@ -1112,11 +1125,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with left rounded to the nearest integer", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(100.34x200:400x300)`
+        `${originalImageUrl}/m/300x200/filters:focal(100x200:400x300)`
       );
     });
 
@@ -1141,11 +1154,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with left capped at 0", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(-100x200:400x300)`
+        `${originalImageUrl}/m/300x200/filters:focal(0x200:400x300)`
       );
     });
 
@@ -1170,11 +1183,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed (best effort) image url with top rounded to the nearest integer", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(100x200.2:400x300)`
+        `${originalImageUrl}/m/300x200/filters:focal(100x200:400x300)`
       );
     });
 
@@ -1199,11 +1212,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with top capped at 0", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(100x-200:400x300)`
+        `${originalImageUrl}/m/300x200/filters:focal(100x0:400x300)`
       );
     });
 
@@ -1228,11 +1241,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with bottom rounded to the nearest integer", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(100x200:400x300.234)`
+        `${originalImageUrl}/m/300x200/filters:focal(100x200:400x300)`
       );
     });
 
@@ -1257,11 +1270,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with bottom capped at 0", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(100x200:400x-300)`
+        `${originalImageUrl}/m/300x200/filters:focal(100x200:400x0)`
       );
     });
 
@@ -1286,11 +1299,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with right rounded to the nearest integer", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(100x200:400.1x300)`
+        `${originalImageUrl}/m/300x200/filters:focal(100x200:400x300)`
       );
     });
 
@@ -1315,11 +1328,11 @@ describe("When resizing image", () => {
         },
       });
 
-    it("Returns processed (best effort) image url", () => {
+    it("Returns processed image url with right capped at 0", () => {
       const { originalImageUrl, processedImageUrl } = thirdSetup();
 
       expect(processedImageUrl).toBe(
-        `${originalImageUrl}/m/300x200/filters:focal(100x200:-400x300)`
+        `${originalImageUrl}/m/300x200/filters:focal(100x200:0x300)`
       );
     });
 

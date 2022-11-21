@@ -18,6 +18,10 @@ export type ImageUrlParameters = {
    * Ranges from 0 to 100.
    *
    * Defaults to 100.
+   *
+   * Floats will be rounded, negative values will be
+   * brought to 0, values over 100 will be brought
+   * to 100 and an error will be issued.
    */
   quality?: number;
 
@@ -27,6 +31,8 @@ export type ImageUrlParameters = {
    *
    * Supported values are integer (negative included) multiples of 90deg.
    * E.g. ... -270, -180, -90, 0, 90, 180, 270 ...
+   *
+   * Floats will be rounded to the nearest integer.
    *
    * Defaults to 0deg (no rotation).
    */
@@ -60,6 +66,10 @@ export type ImageUrlParameters = {
    * Ranges from -100 to 100.
    *
    * Defaults to 0.
+   *
+   * Floats will be rounded, values below -100 will be
+   * brought to -100, values over 100 will be brought
+   * to 100 and an error will be issued.
    */
   brightness?: number;
 } & Xor<
@@ -110,12 +120,21 @@ type BlurParams = {
   /**
    * An int value between 0 and 150.
    * The higher the number, the more blurred the image will be.
+   *
+   * Floats will be rounded, negative values will be
+   * brought to 0, values over 150 will be brought
+   * to 150 and an error will be issued.
    */
   radius: number;
 
   /**
+   * Sigma is used in the gaussian function for blurring.\
+   *
    * Defaults to the same value as the radius.
-   * Sigma is used in the gaussian function for blurring.
+   *
+   * Floats will be rounded, negative values will be
+   * brought to 0, values over 150 will be brought
+   * to 150 and an error will be issued.
    */
   sigma?: number;
 };
@@ -147,24 +166,36 @@ type CropParams = {
   /**
    * Crop rectangle's left-top point
    * X coordinate.
+   *
+   * Floats will be rounded, negative values will be
+   * brought to 0 and an error will be issued.
    */
   left: number;
 
   /**
    * Crop rectangle's left-top point
    * Y coordinate.
+   *
+   * Floats will be rounded, negative values will be
+   * brought to 0 and an error will be issued.
    */
   top: number;
 
   /**
    * Crop rectangle's left-top point
    * X coordinate.
+   *
+   * Floats will be rounded, negative values will be
+   * brought to 0 and an error will be issued.
    */
   right: number;
 
   /**
    * Crop rectangle's left-top point
    * Y coordinate.
+   *
+   * Floats will be rounded, negative values will be
+   * brought to 0 and an error will be issued.
    */
   bottom: number;
 };
@@ -172,9 +203,40 @@ type CropParams = {
 type FocalPointParams =
   | "smart"
   | {
+      /**
+       * Focal point rectangle's left-top point
+       * X coordinate.
+       *
+       * Floats will be rounded, negative values will be
+       * brought to 0 and an error will be issued.
+       */
       left: number;
+
+      /**
+       * Focal point rectangle's left-top point
+       * y coordinate.
+       *
+       * Floats will be rounded, negative values will be
+       * brought to 0 and an error will be issued.
+       */
       top: number;
+
+      /**
+       * Focal point rectangle's right-bottom point
+       * X coordinate.
+       *
+       * Floats will be rounded, negative values will be
+       * brought to 0 and an error will be issued.
+       */
       right: number;
+
+      /**
+       * Focal point rectangle's right-bottom point
+       * Y coordinate.
+       *
+       * Floats will be rounded, negative values will be
+       * brought to 0 and an error will be issued.
+       */
       bottom: number;
     };
 
@@ -263,18 +325,40 @@ export function imageUrl(
   // Filters
   const fillParam = resize?.fill !== undefined && `fill(${resize.fill})`;
   const formatParam = format !== undefined && `format(${format})`;
-  const qualityParam = quality !== undefined && `quality(${quality})`;
+  const qualityParam =
+    quality !== undefined &&
+    `quality(${normalizeNumberToBoundedInteger(0, 100, quality)})`;
   const focalPointParam =
     resize !== undefined &&
     typeof resize.focalPoint === "object" &&
-    `focal(${resize.focalPoint.left}x${resize.focalPoint.top}:${resize.focalPoint.right}x${resize.focalPoint.bottom})`;
+    `focal(${normalizeNumberToBoundedInteger(
+      0,
+      Number.MAX_SAFE_INTEGER,
+      resize.focalPoint.left
+    )}x${normalizeNumberToBoundedInteger(
+      0,
+      Number.MAX_SAFE_INTEGER,
+      resize.focalPoint.top
+    )}:${normalizeNumberToBoundedInteger(
+      0,
+      Number.MAX_SAFE_INTEGER,
+      resize.focalPoint.right
+    )}x${normalizeNumberToBoundedInteger(
+      0,
+      Number.MAX_SAFE_INTEGER,
+      resize.focalPoint.bottom
+    )})`;
   const grayscaleParam = grayscale && `grayscale()`;
   const blurParam =
     blur !== undefined &&
-    `blur(${[blur.radius, blur.sigma].filter(Boolean).join(",")})`;
-  const rotateParam = rotate !== undefined && `rotate(${rotate})`;
+    `blur(${[blur.radius, blur.sigma]
+      .filter(Boolean)
+      .map((value) => normalizeNumberToBoundedInteger(0, 150, value as number))
+      .join(",")})`;
+  const rotateParam = rotate !== undefined && `rotate(${Math.round(rotate)})`;
   const brightnessParam =
-    brightness !== undefined && `brightness(${brightness})`;
+    brightness !== undefined &&
+    `brightness(${normalizeNumberToBoundedInteger(-100, 100, brightness)})`;
 
   const filterParamsArray = [
     fillParam,
@@ -304,10 +388,29 @@ const buildResizeAndFlipParams = (
     return false;
   }
 
-  return `${flip?.horizontal ? "-" : ""}${resize?.width ?? 0}x${
+  const widthCandidate = resize?.width ?? 0;
+  const heightCandidate = resize?.height ?? 0;
+  const width = normalizeNumberToBoundedInteger(
+    0,
+    Number.MAX_SAFE_INTEGER,
+    widthCandidate
+  );
+  const height = normalizeNumberToBoundedInteger(
+    0,
+    Number.MAX_SAFE_INTEGER,
+    heightCandidate
+  );
+
+  return `${flip?.horizontal ? "-" : ""}${width}x${
     flip?.vertical ? "-" : ""
-  }${resize?.height ?? 0}`;
+  }${height}`;
 };
+
+const normalizeNumberToBoundedInteger = (
+  lowerBound: number,
+  upperBound: number,
+  number: number
+) => Math.min(Math.max(Math.round(number), lowerBound), upperBound);
 
 const validateParameters = (options: ImageUrlParameters) => {
   const { quality, rotate, brightness, blur, resize, crop } = options;
@@ -317,7 +420,8 @@ const validateParameters = (options: ImageUrlParameters) => {
   if (quality !== undefined) {
     if (!Number.isInteger(quality) || quality < 0 || quality > 100) {
       errors.push(
-        `When defined, 'quality' is expected to be a positive integer less than or equal 100, but received ${quality} instead.`
+        `When defined, 'quality' is expected to be a positive integer less than or equal 100, but received ${quality} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer, negative values will be turned into 0 and values over 100 will be turned into 100, but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
   }
@@ -325,7 +429,8 @@ const validateParameters = (options: ImageUrlParameters) => {
   if (rotate !== undefined) {
     if (!Number.isInteger(rotate) || rotate % 90 !== 0) {
       errors.push(
-        `When defined, 'rotate' is expected to be an integer (negative included) multiple of 90, but received ${rotate} instead.`
+        `When defined, 'rotate' is expected to be an integer (negative included) multiple of 90, but received ${rotate} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
   }
@@ -337,7 +442,8 @@ const validateParameters = (options: ImageUrlParameters) => {
       brightness > 100
     ) {
       errors.push(
-        `When defined, 'brightness' is expected to be an integer ranging from -100 to 100 (inclusive), but received ${brightness} instead.`
+        `When defined, 'brightness' is expected to be an integer ranging from -100 to 100 (inclusive), but received ${brightness} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer, values below -100 will be turned into -100 and values over 100 will be turned into 100, but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
   }
@@ -346,14 +452,16 @@ const validateParameters = (options: ImageUrlParameters) => {
     const { radius, sigma } = blur;
     if (!Number.isInteger(radius) || radius < 0 || radius > 150) {
       errors.push(
-        `When defined, 'blur.radius' is expected to be an integer ranging from 0 to 150 (inclusive), but received ${radius} instead.`
+        `When defined, 'blur.radius' is expected to be an integer ranging from 0 to 150 (inclusive), but received ${radius} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer, negative values will be turned into 0 and values over 150 will be turned into 150, but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
 
     if (sigma !== undefined) {
       if (!Number.isInteger(sigma) || sigma < 0 || sigma > 150)
         errors.push(
-          `When defined, 'blur.sigma' is expected to be an integer ranging from 0 to 150 (inclusive), but received ${sigma} instead.`
+          `When defined, 'blur.sigma' is expected to be an integer ranging from 0 to 150 (inclusive), but received ${sigma} instead.
+          To avoid breaking the image service, floats will be rounded to the nearest integer, negative values will be turned into 0 and values over 150 will be turned into 150, but you should still avoid passing invalid values as they won't behave as you expect.`
         );
     }
   }
@@ -364,14 +472,16 @@ const validateParameters = (options: ImageUrlParameters) => {
     if (height !== undefined) {
       if (!Number.isInteger(height) || height < 0) {
         errors.push(`When defined, 'resize.height' is expected to be a positive integer, but received ${height} instead.
-        If you passed a negative number to flip the image, use the 'flip' parameter instead.`);
+        If you passed a negative number to flip the image, use the 'flip' parameter instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`);
       }
     }
 
     if (width !== undefined) {
       if (!Number.isInteger(width) || width < 0) {
         errors.push(`When defined, 'resize.width' is expected to be a positive integer, but received ${width} instead.
-        If you passed a negative number to flip the image, use the 'flip' parameter instead.`);
+        If you passed a negative number to flip the image, use the 'flip' parameter instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`);
       }
     }
 
@@ -389,25 +499,29 @@ const validateParameters = (options: ImageUrlParameters) => {
 
         if (!Number.isInteger(bottom) || bottom < 0) {
           errors.push(
-            `When defined, 'resize.focalPoint.bottom' is expected to be a positive integer, but received ${bottom} instead.`
+            `When defined, 'resize.focalPoint.bottom' is expected to be a positive integer, but received ${bottom} instead.
+            To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
           );
         }
 
         if (!Number.isInteger(left) || left < 0) {
           errors.push(
-            `When defined, 'resize.focalPoint.left' is expected to be a positive integer, but received ${left} instead.`
+            `When defined, 'resize.focalPoint.left' is expected to be a positive integer, but received ${left} instead.
+            To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
           );
         }
 
         if (!Number.isInteger(right) || right < 0) {
           errors.push(
-            `When defined, 'resize.focalPoint.right' is expected to be a positive integer, but received ${right} instead.`
+            `When defined, 'resize.focalPoint.right' is expected to be a positive integer, but received ${right} instead.
+            To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
           );
         }
 
         if (!Number.isInteger(top) || top < 0) {
           errors.push(
-            `When defined, 'resize.focalPoint.top' is expected to be a positive integer, but received ${top} instead.`
+            `When defined, 'resize.focalPoint.top' is expected to be a positive integer, but received ${top} instead.
+            To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
           );
         }
       }
@@ -419,25 +533,29 @@ const validateParameters = (options: ImageUrlParameters) => {
 
     if (!Number.isInteger(bottom) || bottom < 0) {
       errors.push(
-        `When defined, 'crop.bottom' is expected to be a positive integer, but received ${bottom} instead.`
+        `When defined, 'crop.bottom' is expected to be a positive integer, but received ${bottom} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
 
     if (!Number.isInteger(left) || left < 0) {
       errors.push(
-        `When defined, 'crop.left' is expected to be a positive integer, but received ${left} instead.`
+        `When defined, 'crop.left' is expected to be a positive integer, but received ${left} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
 
     if (!Number.isInteger(right) || right < 0) {
       errors.push(
-        `When defined, 'crop.right' is expected to be a positive integer, but received ${right} instead.`
+        `When defined, 'crop.right' is expected to be a positive integer, but received ${right} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
 
     if (!Number.isInteger(top) || top < 0) {
       errors.push(
-        `When defined, 'crop.top' is expected to be a positive integer, but received ${top} instead.`
+        `When defined, 'crop.top' is expected to be a positive integer, but received ${top} instead.
+        To avoid breaking the image service, floats will be rounded to the nearest integer and negative values will be turned into 0 but you should still avoid passing invalid values as they won't behave as you expect.`
       );
     }
   }
