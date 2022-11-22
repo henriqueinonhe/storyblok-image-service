@@ -1,6 +1,6 @@
 {
   "name": "storyblok-image-service",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Storyblok Image Service JS SDK",
   "main": "dist/index.js",
   "scripts": {
