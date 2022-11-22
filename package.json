@@ -2,7 +2,7 @@
   "name": "storyblok-image-service",
   "version": "1.0.0",
   "description": "Storyblok Image Service JS SDK",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "npx jest && npx tsc --noEmit ./src/types.test.ts"
   },
