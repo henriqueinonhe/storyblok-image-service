@@ -1,0 +1,8 @@
+.vscode
+coverage
+node_modules
+src
+.gitignore
+.tool-versions
+jest.config.js
+tsconfig.json
